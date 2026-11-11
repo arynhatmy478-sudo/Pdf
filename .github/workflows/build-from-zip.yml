@@ -7,16 +7,19 @@ permissions:
   contents: write
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Unzip project
         run: |
-          Z=$(ls *.zip | head -1)
+          Z=$(find . -iname '*.zip' -not -path './proj/*' | head -1)
+          echo "zip: $Z"
+          if [ -z "$Z" ]; then echo "NO ZIP FOUND"; ls -R | head -40; exit 1; fi
           mkdir proj && unzip -q "$Z" -d proj
-          D=$(dirname "$(find proj -name settings.gradle | head -1)")
-          echo "DIR=$D" >> $GITHUB_ENV
-      - uses: actions/setup-java@v4
+          S=$(find proj -name settings.gradle | head -1)
+          if [ -z "$S" ]; then echo "settings.gradle not found in zip"; find proj | head -40; exit 1; fi
+          echo "DIR=$(dirname "$S")" >> $GITHUB_ENV
+      - uses: actions/setup-java@v5
         with: { distribution: temurin, java-version: 17 }
       - uses: android-actions/setup-android@v3
       - name: Download PDF libraries
